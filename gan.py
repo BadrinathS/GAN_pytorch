@@ -28,10 +28,10 @@ class Generator(nn.Module):
         self.fc4 = nn.Linear(self.fc3.out_features, output_dim)
     
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
+        x = F.leaky_relu(self.fc1(x), 0.2)
+        x = F.leaky_relu(self.fc2(x), 0.2)
+        x = F.leaky_relu(self.fc3(x), 0.2)
+        x = F.leaky_relu(self.fc4(x), 0.2)
 
         return x
 class Discriminator(nn.Module):
@@ -43,9 +43,9 @@ class Discriminator(nn.Module):
         self.fc4 = nn.Linear(self.fc3.out_features, 1)
     
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
+        x = F.leaky_relu(self.fc1(x), 0.2)
+        x = F.leaky_relu(self.fc2(x), 0.2)
+        x = F.leaky_relu(self.fc3(x), 0.2)
         x = torch.sigmoid(self.fc4(x))
 
         return x
@@ -114,7 +114,13 @@ for epoch in range(n_epoch):
         g_losses.append(train_generator(x))
         d_losses.append(train_discriminator(x))
         
-        
+    if epoch % 10 == 0:
+        with torch.no_grad():
+            test_z = torch.randn(bs, g_input_dim).to(device)
+            generated_output = generator(test_z)
+            name = './images/sample_' + str(epoch) + '.png'
+            save_image(generated_output.view(bs, 1, 28,28), name)  
+
     print('Epoch %d \t loss_d %f \t loss_g %f'%( epoch, torch.mean(torch.FloatTensor(d_losses)).item(), torch.mean(torch.FloatTensor(g_losses)).item()))
 
 torch.save(generator.state_dict(), './ckpt/generator.pth')
@@ -124,4 +130,4 @@ with torch.no_grad():
     test_z = torch.randn(bs, g_input_dim).to(device)
     generated_output = generator(test_z)
 
-    save_image(generated_output.view(bs, 1, 28,28), './sample.png')
+    save_image(generated_output.view(bs, 1, 28,28), './images/sample_final.png')
